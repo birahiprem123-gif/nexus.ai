@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NEXUS AI - True Local Gemini Engine</title>
+<style>
+  :root{
+    --pbi-blue:#0078D4;
+    --pbi-blue-dark:#005A9E;
+    --pbi-teal:#00B7C3;
+    --pbi-bg:#F3F2F1;
+    --pbi-card:#FFFFFF;
+    --pbi-border:#E1DFDD;
+    --pbi-text:#252423;
+    --pbi-text-sub:#605E5C;
+    --pbi-green:#107C10;
+    --pbi-red:#D13438;
+    --pbi-amber:#F2C811;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+    background:var(--pbi-bg);
+    color:var(--pbi-text);
+  }
+  .app{ display:flex; height:100vh; min-height:600px; }
+  .sidebar{
+    width:300px; background:var(--pbi-card); border-right:1px solid var(--pbi-border);
+    display:flex; flex-direction:column; padding:16px; overflow-y:auto;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; margin-bottom:20px; }
+  .brand-mark{
+    width:30px;height:30px;border-radius:4px;
+    background:linear-gradient(135deg,var(--pbi-blue),var(--pbi-teal));
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:600;font-size:13px;
+  }
+  .section-label{ font-size:11px; text-transform:uppercase; color:var(--pbi-text-sub); font-weight:600; margin:14px 0 8px; }
+  textarea#dataInput{
+    width:100%; min-height:120px; border:1px solid var(--pbi-border); border-radius:4px;
+    padding:8px; font-size:12px; font-family:monospace;
+  }
+  .btn{
+    border:1px solid var(--pbi-border); background:#fff; color:var(--pbi-text);
+    border-radius:4px; padding:7px 12px; font-size:12px; cursor:pointer;
+  }
+  .btn-primary{ background:var(--pbi-blue); border-color:var(--pbi-blue); color:#fff; }
+  .btn-row{ display:flex; gap:8px; margin-top:8px; }
+  .main{ flex:1; display:flex; flex-direction:column; }
+  .topbar{
+    height:52px; background:var(--pbi-card); border-bottom:1px solid var(--pbi-border);
+    display:flex; align-items:center; justify-content:space-between; padding:0 18px;
+  }
+  .chat-area{ flex:1; overflow-y:auto; padding:20px 24px; display:flex; flex-direction:column; gap:14px; }
+  .msg{ max-width:75%; padding:10px 14px; border-radius:8px; font-size:14px; line-height:1.5; white-space:pre-wrap;}
+  .msg.user{ align-self:flex-end; background:var(--pbi-blue); color:#fff; }
+  .msg.ai{ align-self:flex-start; background:var(--pbi-card); border:1px solid var(--pbi-border); }
+  .msg.system{ align-self:center; background:#FFF4CE; border:1px solid var(--pbi-amber); color:#5c4813; font-size:12px; width:100%; text-align:center;}
+  .input-bar{ border-top:1px solid var(--pbi-border); background:var(--pbi-card); padding:12px 18px; display:flex; gap:10px; }
+  textarea#chatInput{ flex:1; border:1px solid var(--pbi-border); border-radius:4px; padding:9px 12px; height:40px; resize:none; }
+  #sendBtn{ background:var(--pbi-blue); color:#fff; border:none; border-radius:4px; padding:0 18px; cursor:pointer; font-weight:600; }
+  #sendBtn:disabled{ background:#C8C6C4; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">G</div>
+      <div>
+        <div style="font-weight:600; font-size:15px;">NEXUS Gemini-Local</div>
+        <div style="font-size:11px; color:var(--pbi-text-sub);">100% Offline LLM Engine</div>
+      </div>
+    </div>
+
+    <div class="section-label">AI Engine Status</div>
+    <div id="statusMessage" class="msg system">Initializing Web AI Engine... Please wait.</div>
+    <div id="progressWrap" style="width:100%;height:6px;background:var(--pbi-border);border-radius:3px;overflow:hidden;margin-top:6px;">
+      <div id="progressBar" style="height:100%;width:0%;background:var(--pbi-blue);transition:width .2s;"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="testNetworkBtn" style="flex:1;">Test Network / CDN Access</button>
+    </div>
+    <div id="diagResults" style="font-size:11px; margin-top:6px;"></div>
+
+    <div class="section-label">Model <span id="engineBadge" style="font-weight:600;"></span></div>
+    <select id="modelSelect" class="btn" style="width:100%;"></select>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="loadModelBtn" style="flex:1;">Load / Switch Model</button>
+    </div>
+
+    <div class="section-label">Report Data Context</div>
+    <textarea id="dataInput" placeholder="Paste branch or OLT data here..."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="loadDataBtn" style="flex:1;">Load Context</button>
+      <button class="btn" id="clearChatBtn">Clear Chat</button>
+    </div>
+    <div style="font-size:11px;color:var(--pbi-text-sub);margin-top:6px;">
+      Data context ra chat history duvai AI lai pathaindaicha, so tesle aghiko kura pani samjhancha.
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="font-weight:600;">Local AI Analytics Dashboard</div>
+    </div>
+    <div class="chat-area" id="chatArea">
+      <div class="msg ai">नमस्ते Prem Sir! म जेमिनी जस्तै काम गर्ने तपाईंको स्थानीय AI सहयोगी हुँ। बायाँपट्टी ब्रान्चको रिपोर्ट डेटा पेस्ट गर्नुहोस्, त्यसपछि मलाई काउन्ट गर्न, समरी निकाल्न वा जुनसुकै तरिकाले सोध्नुहोस्।</div>
+    </div>
+    <div class="input-bar">
+      <textarea id="chatInput" placeholder="Ask anything about the report..." disabled></textarea>
+      <button id="sendBtn" disabled>Send</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+
+const chatArea = document.getElementById('chatArea');
+const chatInput = document.getElementById('chatInput');
+const sendBtn = document.getElementById('sendBtn');
+const statusMessage = document.getElementById('statusMessage');
+const progressBar = document.getElementById('progressBar');
+const modelSelect = document.getElementById('modelSelect');
+const loadModelBtn = document.getElementById('loadModelBtn');
+const engineBadge = document.getElementById('engineBadge');
+
+let dataContext = "";
+let isGenerating = false;
+
+// Rolling chat history so the AI remembers the conversation, not just the last message
+let history = [];
+const MAX_HISTORY_TURNS = 12; // keep last N user/assistant pairs to control context size
+
+// ---- Backend detection: WebGPU (fast, bigger models) vs WASM/CPU (works everywhere) ----
+const hasWebGPU = !!navigator.gpu;
+let backend = hasWebGPU ? 'webgpu' : 'wasm'; // may downgrade to 'wasm' at runtime if webgpu init fails
+
+let webllm = null;        // module ref, loaded lazily
+let transformers = null;  // module ref, loaded lazily
+let mlcEngine = null;     // WebLLM engine instance
+let tfGenerator = null;   // transformers.js pipeline instance
+
+// ---- Robust module loader: tries multiple CDN mirrors, since a single CDN
+// can be blocked/unreachable on some networks (common cause of "Failed to fetch") ----
+async function loadModuleWithFallback(urls, label) {
+  let lastErr = null;
+  for (const url of urls) {
+    try {
+      setStatus(`Loading ${label} library from ${new URL(url).hostname}...`, 'busy');
+      const mod = await import(/* @vite-ignore */ url);
+      return mod;
+    } catch (err) {
+      console.warn(`${label} import failed from ${url}:`, err);
+      lastErr = err;
+    }
+  }
+  throw new Error(`Could not load ${label} from any CDN mirror. Last error: ${lastErr?.message || lastErr}`);
+}
+
+const WEBLLM_URLS = [
+  "https://esm.run/@mlc-ai/web-llm",
+  "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm/+esm",
+  "https://unpkg.com/@mlc-ai/web-llm?module"
+];
+const TRANSFORMERS_URLS = [
+  "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0",
+  "https://esm.run/@huggingface/transformers@3.0.0",
+  "https://unpkg.com/@huggingface/transformers@3.0.0?module"
+];
+
+// Opening this file directly as file:// blocks ES module + cross-origin fetches in most browsers.
+// Warn early so the real cause is obvious instead of a cryptic fetch error.
+if (location.protocol === 'file:') {
+  setStatus('⚠️ Yo file "file://" bata directly kholeko dekhincha. Browser le local file bata AI library load garna didaina (CORS). Yesलाई GitHub Pages ma host garnुहोस्, वा local server chalाउनुहोस् (jastai: python3 -m http.server, aani http://localhost:8000 bata kholnुहोस्).', 'err');
+}
+
+const GPU_MODELS = [
+  { id: "Qwen2.5-3B-Instruct-q4f16_1-MLC", label: "Qwen2.5-3B (recommended, smart + fast)" },
+  { id: "Phi-3.5-mini-instruct-q4f16_1-MLC", label: "Phi-3.5-mini (strong reasoning)" },
+  { id: "Llama-3.2-3B-Instruct-q4f16_1-MLC", label: "Llama-3.2-3B" },
+  { id: "gemma-2-2b-it-q4f16_1-MLC", label: "Gemma-2-2B (fastest, lightest)" }
+];
+
+// CPU/WASM-compatible ONNX models — run without WebGPU, smaller & slower but universal
+const CPU_MODELS = [
+  { id: "onnx-community/Qwen2.5-0.5B-Instruct", label: "Qwen2.5-0.5B (recommended, CPU-only)" },
+  { id: "HuggingFaceTB/SmolLM2-360M-Instruct", label: "SmolLM2-360M (fastest, weakest devices)" }
+];
+
+function populateModelList() {
+  const list = backend === 'webgpu' ? GPU_MODELS : CPU_MODELS;
+  modelSelect.innerHTML = list.map(m => `<option value="${m.id}">${m.label}</option>`).join('');
+  engineBadge.textContent = backend === 'webgpu' ? '(GPU mode)' : '(CPU/WASM mode)';
+  engineBadge.style.color = backend === 'webgpu' ? 'var(--pbi-green)' : 'var(--pbi-blue)';
+}
+
+// ---- Network diagnostics: pinpoint exactly which domains are reachable ----
+// Corporate/ISP networks often allow some CDNs but block others, which produces
+// generic "Failed to fetch" errors that are hard to diagnose from the error alone.
+const DIAG_TARGETS = [
+  { name: "esm.run", url: "https://esm.run/@mlc-ai/web-llm" },
+  { name: "cdn.jsdelivr.net", url: "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0/package.json" },
+  { name: "unpkg.com", url: "https://unpkg.com/@huggingface/transformers@3.0.0/package.json" },
+  { name: "huggingface.co (model weights)", url: "https://huggingface.co/api/models/onnx-community/Qwen2.5-0.5B-Instruct" },
+  { name: "raw.githubusercontent.com (WebLLM model configs)", url: "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/README.md" }
+];
+
+async function runNetworkDiagnostics() {
+  const diagDiv = document.getElementById('diagResults');
+  diagDiv.innerHTML = `Protocol: <b>${location.protocol}</b>${location.protocol === 'file:' ? ' ⚠️ (file:// bata kholeko — yesले CDN access nai block garcha, pahile GitHub Pages वा local server bata kholnुहोस्)' : ' (OK, served over http/https)'}`;
+
+  for (const t of DIAG_TARGETS) {
+    const line = document.createElement('div');
+    line.textContent = `⏳ ${t.name} — testing...`;
+    diagDiv.appendChild(line);
+    try {
+      // no-cors avoids CORS rejection noise; we only care whether the network request itself succeeds
+      await fetch(t.url, { method: 'GET', mode: 'no-cors', cache: 'no-store' });
+      line.textContent = `✅ ${t.name} — reachable`;
+      line.style.color = 'var(--pbi-green)';
+    } catch (err) {
+      line.textContent = `❌ ${t.name} — BLOCKED or unreachable (${err.message})`;
+      line.style.color = 'var(--pbi-red)';
+    }
+  }
+
+  const summary = document.createElement('div');
+  summary.style.marginTop = '6px';
+  summary.style.fontWeight = '600';
+  summary.textContent = 'Sabai ❌ bhaye: network/firewall le external CDN block gareko ho — IT/network admin lai yi domain haru allowlist garna भन्नुहोस्, वा arू (unrestricted) internet/mobile hotspot bata try garनुहोस्.';
+  diagDiv.appendChild(summary);
+}
+
+document.getElementById('testNetworkBtn').addEventListener('click', runNetworkDiagnostics);
+
+function setStatus(text, state) {
+  statusMessage.textContent = text;
+  statusMessage.style.background = state === 'ok' ? '#DFF6DD' : state === 'err' ? '#FDE7E9' : '#FFF4CE';
+  statusMessage.style.borderColor = state === 'ok' ? '#107C10' : state === 'err' ? '#D13438' : '#F2C811';
+  statusMessage.style.color = state === 'ok' ? '#107C10' : state === 'err' ? '#D13438' : '#5c4813';
+}
+
+async function initWebGPUEngine(modelId) {
+  if (!webllm) webllm = await loadModuleWithFallback(WEBLLM_URLS, 'WebLLM');
+  mlcEngine = await webllm.CreateMLCEngine(modelId, {
+    initProgressCallback: (report) => {
+      setStatus(report.text, 'busy');
+      const pct = Math.round((report.progress || 0) * 100);
+      progressBar.style.width = pct + '%';
+    }
+  });
+}
+
+async function initWasmEngine(modelId) {
+  if (!transformers) transformers = await loadModuleWithFallback(TRANSFORMERS_URLS, 'Transformers.js');
+  tfGenerator = await transformers.pipeline("text-generation", modelId, {
+    dtype: "q4",
+    device: "wasm",
+    progress_callback: (p) => {
+      if (p.status === 'progress') {
+        const pct = Math.round(p.progress || 0);
+        progressBar.style.width = pct + '%';
+        setStatus(`Downloading ${p.file || 'model'}... ${pct}%`, 'busy');
+      } else if (p.status) {
+        setStatus(p.status + (p.file ? ` (${p.file})` : ''), 'busy');
+      }
+    }
+  });
+}
+
+async function initAI(modelId) {
+  if (location.protocol === 'file:') {
+    setStatus('⚠️ Yo file "file://" bata directly kholeko dekhincha, tesले AI library CDN bata load huna dinna (browser CORS restriction). Yesलाई GitHub Pages ma host garnुहोस्, वा terminal ma "python3 -m http.server" chalाएर http://localhost:8000 bata kholnुहोस्.', 'err');
+    return;
+  }
+  chatInput.disabled = true;
+  sendBtn.disabled = true;
+  loadModelBtn.disabled = true;
+  progressBar.style.width = '0%';
+  mlcEngine = null;
+  tfGenerator = null;
+
+  setStatus(backend === 'webgpu'
+    ? 'Preparing GPU model download / cache check...'
+    : 'WebGPU not available on this device — loading CPU (WASM) engine instead. First load may take a minute...', 'busy');
+
+  try {
+    if (backend === 'webgpu') {
+      await initWebGPUEngine(modelId);
+    } else {
+      await initWasmEngine(modelId);
+    }
+    progressBar.style.width = '100%';
+    setStatus(`AI Model Ready Offline ✓ (${modelId}) — ${backend === 'webgpu' ? 'GPU mode' : 'CPU/WASM mode'}`, 'ok');
+    chatInput.disabled = false;
+    sendBtn.disabled = false;
+  } catch (err) {
+    console.error(err);
+    if (backend === 'webgpu') {
+      // Runtime GPU failure (e.g. adapter request denied) -> auto-fallback to CPU engine
+      setStatus('GPU engine failed to initialize. Falling back to CPU (WASM) mode automatically...', 'busy');
+      backend = 'wasm';
+      populateModelList();
+      return initAI(modelSelect.value);
+    }
+    setStatus('Failed to load model. Check your internet connection (first-time model download) and try a smaller model. Error: ' + err.message, 'err');
+  } finally {
+    loadModelBtn.disabled = false;
+  }
+}
+
+populateModelList();
+
+loadModelBtn.addEventListener('click', () => {
+  const chosen = modelSelect.value;
+  history = []; // reset conversation memory when switching models
+  initAI(chosen);
+});
+
+document.getElementById('loadDataBtn').addEventListener('click', () => {
+  dataContext = document.getElementById('dataInput').value.trim();
+  appendMessage('system', dataContext
+    ? `Data context loaded (${dataContext.length} characters). AI le arko dekhi yo data prayog garcha.`
+    : 'Data context cleared / khali cha.');
+});
+
+document.getElementById('clearChatBtn').addEventListener('click', () => {
+  history = [];
+  chatArea.innerHTML = '';
+  appendMessage('ai', 'Chat clear vayo. Aba fresh conversation suru garaun.');
+});
+
+sendBtn.addEventListener('click', handleSend);
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+});
+
+function buildSystemPrompt() {
+  return `You are NEXUS AI, a sharp, reliable data-analyst assistant for Prem, the Branch Incharge at Worldlink's Shuklagandaki Branch (Region 5), managing OLTs SKGD01, VMAD01, and RISH01.
+
+You have two sources of knowledge:
+1. General world knowledge from your own training (facts, math, reasoning, writing help, telecom/ISP domain knowledge, etc). You can freely use this for anything not related to the specific branch data below.
+2. The branch's live data context, pasted below. When the user asks about counts, sums, churn, revenue, OLT-specific numbers, or anything found in this data, you MUST calculate and answer strictly from this data — do not invent numbers.
+
+=== LIVE REPORT DATA CONTEXT ===
+${dataContext ? dataContext : '(No data context loaded yet — if the user asks a data-specific question, tell them to paste data and click "Load Context".)'}
+=== END DATA CONTEXT ===
+
+Rules:
+- If the question is about the data above, be precise: recompute sums/counts/averages carefully from the raw text.
+- If the question is general knowledge (not related to the data), just answer normally and accurately.
+- Keep answers concise, structured, and professional. Use Nepali/English mix if the user writes in Nepali/English mix, otherwise reply in the user's language.
+- Never fabricate data values that are not in the context.`;
+}
+
+async function handleSend() {
+  const userText = chatInput.value.trim();
+  if (!userText || isGenerating) return;
+
+  if (!mlcEngine && !tfGenerator) {
+    appendMessage('system', 'AI model haleko chaina. Pahila sidebar bata "Load / Switch Model" click garnus.');
+    return;
+  }
+
+  appendMessage('user', userText);
+  chatInput.value = "";
+  isGenerating = true;
+  sendBtn.disabled = true;
+
+  const aiMsgDiv = appendMessage('ai', "Thinking...");
+
+  // Build message list: system prompt (with fresh data context) + trimmed history + new user turn
+  const messages = [
+    { role: "system", content: buildSystemPrompt() },
+    ...history.slice(-MAX_HISTORY_TURNS * 2),
+    { role: "user", content: userText }
+  ];
+
+  let fullText = "";
+  try {
+    if (backend === 'webgpu' && mlcEngine) {
+      const stream = await mlcEngine.chat.completions.create({
+        messages,
+        temperature: 0.2,
+        stream: true
+      });
+      aiMsgDiv.textContent = "";
+      for await (const chunk of stream) {
+        const delta = chunk.choices?.[0]?.delta?.content || "";
+        fullText += delta;
+        aiMsgDiv.textContent = fullText;
+        chatArea.scrollTop = chatArea.scrollHeight;
+      }
+    } else if (tfGenerator) {
+      aiMsgDiv.textContent = "";
+      const streamer = new transformers.TextStreamer(tfGenerator.tokenizer, {
+        skip_prompt: true,
+        skip_special_tokens: true,
+        callback_function: (token) => {
+          fullText += token;
+          aiMsgDiv.textContent = fullText;
+          chatArea.scrollTop = chatArea.scrollHeight;
+        }
+      });
+      await tfGenerator(messages, {
+        max_new_tokens: 512,
+        temperature: 0.2,
+        do_sample: true,
+        streamer
+      });
+    }
+
+    history.push({ role: "user", content: userText });
+    history.push({ role: "assistant", content: fullText });
+  } catch (error) {
+    console.error(error);
+    aiMsgDiv.textContent = "Error generating response: " + error.message;
+  } finally {
+    isGenerating = false;
+    sendBtn.disabled = false;
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+}
+
+function appendMessage(role, text) {
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.textContent = text;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  return div;
+}
+
+setStatus(hasWebGPU
+  ? 'WebGPU detected. Ready to load a GPU-accelerated model.'
+  : 'WebGPU not detected on this device/browser. Will use CPU (WASM) engine — works everywhere, just slower.', 'busy');
+
+if (location.protocol !== 'file:') {
+  initAI(modelSelect.value);
+} else {
+  chatInput.disabled = true;
+  sendBtn.disabled = true;
+}
+</script>
+</body>
+</html>
